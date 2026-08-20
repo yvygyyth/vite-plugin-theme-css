@@ -1,34 +1,39 @@
 {
-    "name": "vite-plugin-theme-css",
-    "version": "0.1.0",
-    "type": "module",
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      }
-    },
-    "files": ["dist"],
-    "scripts": {
-      "build": "tsup src/index.ts --format esm,cjs --dts",
-      "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
-      "test": "vitest"
-    },
-    "dependencies": {
-      "jiti": "^2.7.0"
-    },
-    "peerDependencies": {
-      "vite": ">=5.0.0"
-    },
-    "devDependencies": {
-      "@types/node": "^26.2.0",
-      "typescript": "^7.0.2",
-      "tsup": "^8.5.1",
-      "vite": "^8.2.2",
-      "sass": "^1.103.0",
-      "vitest": "^4.1.11"
+  "name": "vite-plugin-theme-css",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "test": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "jiti": "^2.7.0"
+  },
+  "peerDependencies": {
+    "vite": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "prettier": "3.9.6",
+    "sass": "^1.103.0",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   }
+}

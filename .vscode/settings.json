@@ -1,0 +1,16 @@
+{
+  "i18n-ally.localesPaths": ["locales"],
+  "i18n-ally.keystyle": "nested",
+  // 保存自动格式化（Prettier）
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "editor.codeActionsOnSave": {},
+
+  "eslint.format.enable": false,
+  "i18n-ally.sourceLanguage": "zh-CN"
+}
