@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { generateThemeCss } from './css'
+import { generateThemeCss } from './index'
 
 describe('generateThemeCss', () => {
     it('生成 :root 公共变量与主题变量', () => {

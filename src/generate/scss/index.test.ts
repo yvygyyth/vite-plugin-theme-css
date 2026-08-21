@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { generateScssHelper } from './scss'
+import { generateScssHelper } from './index'
 
 describe('generateScssHelper', () => {
     it('包含 theme / common / on-theme API', () => {

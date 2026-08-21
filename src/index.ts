@@ -1,5 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import { createJiti } from 'jiti'
 import type { TransformOptions, TransformResult } from 'jiti'
@@ -7,7 +9,7 @@ import type { ThemeCssOptions, ThemeConfig } from './types'
 import { defaultOptions } from './types'
 import { generateThemeCss } from './generate/css'
 import { generateScssHelper } from './generate/scss'
-import { generateRuntime } from './generate/runtime'
+import { generateJs } from './generate/js'
 
 // jiti 的 transform 选项会整段替换默认 Babel；要先改 source 再交给 babel
 const require = createRequire(import.meta.url)
@@ -15,13 +17,21 @@ const babelTransform = createRequire(require.resolve('jiti/package.json'))('./di
     opts: TransformOptions
 ) => TransformResult
 
-// 虚拟模块 ID 常量
 const VIRTUAL_CSS_ID = 'virtual:theme-css/css'
 const VIRTUAL_CSS_RESOLVED = '\0virtual:theme-css.css'
 const VIRTUAL_SCSS_ID = 'virtual:theme-css/scss'
 const VIRTUAL_SCSS_RESOLVED = '\0virtual:theme-css.scss'
 const VIRTUAL_RUNTIME_ID = '@scope/theme-css'
-const VIRTUAL_RUNTIME_RESOLVED = '\0virtual:theme-css/runtime'
+const VIRTUAL_RUNTIME_DATA_ID = 'virtual:theme-css/runtime-data'
+const VIRTUAL_RUNTIME_DATA_RESOLVED = '\0virtual:theme-css/runtime-data'
+
+/** @scope/theme-css → 真实入口文件（逻辑在 TS 里，不靠字符串拼） */
+function resolveRuntimeEntryPath(): string {
+    const here = path.dirname(fileURLToPath(import.meta.url))
+    const distEntry = path.join(here, 'runtime-entry.mjs')
+    if (existsSync(distEntry)) return distEntry
+    return path.join(here, 'runtime', 'virtual-entry.ts')
+}
 
 export function themeCss(options: ThemeCssOptions = {}): Plugin {
     const resolvedOptions = { ...defaultOptions, ...options }
@@ -31,17 +41,14 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
     let themeConfig: ThemeConfig
     let cssContent = ''
     let scssHelperContent = ''
-    let runtimeContent = ''
+    let runtimeDataContent = ''
+    const runtimeEntryPath = resolveRuntimeEntryPath()
 
-    /**
-     * 加载配置文件并生成所有虚拟模块内容
-     */
     async function loadConfigAndGenerate() {
         const jiti = createJiti(import.meta.url, {
             interopDefault: true,
             transform: (opts) => {
                 let { source } = opts
-                // 调用了 defineTheme 但未 import/声明时，注入恒等函数（类似 defineConfig）
                 const usesDefineTheme = /\bdefineTheme\s*\(/.test(source)
                 const hasBinding =
                     /\bimport\s[\s\S]*?\bdefineTheme\b/.test(source) ||
@@ -58,26 +65,19 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
         }
         themeConfig = mod.default
 
-        // 生成各模块内容
         cssContent = generateThemeCss(themeConfig)
         scssHelperContent = generateScssHelper()
-        runtimeContent = generateRuntime(themeConfig, { syncHtmlDark })
+        runtimeDataContent = generateJs(themeConfig, { syncHtmlDark })
     }
 
     return {
         name: 'vite-plugin-theme-css',
 
-        /**
-         * 在 Vite 配置解析完成后立即加载主题配置
-         */
         async configResolved(config) {
             viteConfig = config
             await loadConfigAndGenerate()
         },
 
-        /**
-         * 解析虚拟模块 ID
-         */
         resolveId(id) {
             switch (id) {
                 case VIRTUAL_CSS_ID:
@@ -85,47 +85,39 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
                 case VIRTUAL_SCSS_ID:
                     return VIRTUAL_SCSS_RESOLVED
                 case VIRTUAL_RUNTIME_ID:
-                    return VIRTUAL_RUNTIME_RESOLVED
+                    return runtimeEntryPath
+                case VIRTUAL_RUNTIME_DATA_ID:
+                    return VIRTUAL_RUNTIME_DATA_RESOLVED
                 default:
                     return null
             }
         },
 
-        /**
-         * 加载虚拟模块内容
-         */
         load(id) {
             switch (id) {
                 case VIRTUAL_CSS_RESOLVED:
                     return cssContent
                 case VIRTUAL_SCSS_RESOLVED:
                     return scssHelperContent
-                case VIRTUAL_RUNTIME_RESOLVED:
-                    return runtimeContent
+                case VIRTUAL_RUNTIME_DATA_RESOLVED:
+                    return runtimeDataContent
                 default:
                     return null
             }
         },
 
-        /**
-         * 包装 SCSS additionalData，自动注入 helper
-         */
         config(userConfig) {
             const scssOptions = userConfig.css?.preprocessorOptions?.scss ?? {}
             const userAdditionalData = scssOptions.additionalData
-
-            // 我们的注入前缀
             const ourPrefix = `@use "${VIRTUAL_SCSS_ID}" as ${scssNamespace};\n`
 
             const wrappedAdditionalData = async (source: string, filename: string) => {
-                // 排除插件内部虚拟文件，避免循环依赖
                 if (filename.includes('virtual:theme-css')) {
                     return typeof userAdditionalData === 'function'
                         ? await userAdditionalData(source, filename)
                         : (userAdditionalData ?? '')
                 }
 
-                // 用户自定义排除规则
                 const shouldExclude = Array.isArray(exclude)
                     ? exclude.some((rule) => {
                           if (typeof rule === 'string') return filename.includes(rule)
@@ -142,13 +134,11 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
                         : (userAdditionalData ?? '')
                 }
 
-                // 获取用户原始 additionalData 内容
                 const userContent =
                     typeof userAdditionalData === 'function'
                         ? await userAdditionalData(source, filename)
                         : (userAdditionalData ?? '')
 
-                // 我们的前缀放在最前面，保证后续用户代码可用
                 return ourPrefix + userContent
             }
 
@@ -164,34 +154,29 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
             }
         },
 
-        /**
-         * 热更新：监听配置文件变化，重新生成内容并刷新浏览器
-         */
         async handleHotUpdate(ctx) {
             const configAbsPath = path.resolve(configPath)
             if (ctx.file === configAbsPath) {
                 await loadConfigAndGenerate()
 
-                // 使相关虚拟模块失效
                 const moduleGraph = ctx.server.moduleGraph
                 for (const id of [
                     VIRTUAL_CSS_RESOLVED,
-                    VIRTUAL_RUNTIME_RESOLVED,
-                    VIRTUAL_SCSS_RESOLVED
+                    VIRTUAL_SCSS_RESOLVED,
+                    VIRTUAL_RUNTIME_DATA_RESOLVED,
+                    runtimeEntryPath
                 ]) {
                     const mod = moduleGraph.getModuleById(id)
-                    if (mod) {
-                        moduleGraph.invalidateModule(mod)
-                    }
+                    if (mod) moduleGraph.invalidateModule(mod)
                 }
 
-                // 发送全量刷新，确保所有引用更新
                 ctx.server.ws.send({ type: 'full-reload' })
             }
         }
     }
 }
 
-// 导出类型和辅助函数，供用户可选使用
 export type { ThemeCssOptions, ThemeConfig } from './types'
+export type { ThemeRuntime, ThemeRuntimeOptions } from './runtime'
 export { defineTheme } from './defineTheme'
+export { createThemeRuntime } from './runtime'

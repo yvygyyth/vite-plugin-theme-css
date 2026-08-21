@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
-import { generateRuntime } from './runtime'
+import { createThemeRuntime } from './index'
 import type { ThemeConfig } from '../types'
 
 const config: ThemeConfig = {
@@ -10,18 +10,7 @@ const config: ThemeConfig = {
     common: { font: { size: { h1: '32px' } } }
 }
 
-async function loadRuntime(syncHtmlDark = true) {
-    const code = generateRuntime(config, { syncHtmlDark })
-    const moduleUrl = `data:text/javascript,${encodeURIComponent(code)}`
-    return import(/* @vite-ignore */ moduleUrl) as Promise<{
-        theme: (...keys: string[]) => string
-        common: (...keys: string[]) => string
-        setTheme: (name: string) => void
-        getTheme: () => string
-    }>
-}
-
-describe('generateRuntime', () => {
+describe('createThemeRuntime', () => {
     let classListToggle: ReturnType<typeof vi.fn>
 
     beforeEach(() => {
@@ -38,8 +27,8 @@ describe('generateRuntime', () => {
         vi.unstubAllGlobals()
     })
 
-    it('按路径读取当前主题与公共 token', async () => {
-        const runtime = await loadRuntime()
+    it('按路径读取当前主题与公共 token', () => {
+        const runtime = createThemeRuntime(config)
 
         expect(runtime.getTheme()).toBe('light')
         expect(runtime.theme('text', 'primary')).toBe('#111')
@@ -47,8 +36,8 @@ describe('generateRuntime', () => {
         expect(runtime.theme('missing')).toBe('')
     })
 
-    it('setTheme 更新 data-theme，并可选同步 dark class', async () => {
-        const runtime = await loadRuntime(true)
+    it('setTheme 更新 data-theme，并可选同步 dark class', () => {
+        const runtime = createThemeRuntime(config, { syncHtmlDark: true })
 
         runtime.setTheme('dark')
         expect(runtime.getTheme()).toBe('dark')
@@ -60,8 +49,8 @@ describe('generateRuntime', () => {
         expect(classListToggle).toHaveBeenCalledWith('dark', false)
     })
 
-    it('syncHtmlDark 为 false 时不同步 class', async () => {
-        const runtime = await loadRuntime(false)
+    it('syncHtmlDark 为 false 时不同步 class', () => {
+        const runtime = createThemeRuntime(config, { syncHtmlDark: false })
 
         runtime.setTheme('dark')
         expect(document.documentElement.dataset.theme).toBe('dark')
