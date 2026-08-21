@@ -1,5 +1,5 @@
-import { flattenTokens } from './utils/flatten'
-import type { ThemeConfig } from './types'
+import { flattenTokens } from '../utils/flatten'
+import type { ThemeConfig } from '../types'
 
 /**
  * 根据配置生成 CSS 变量字符串

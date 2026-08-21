@@ -1,4 +1,4 @@
-import type { ThemeConfig } from './types'
+import type { ThemeConfig } from '../types'
 
 /**
  * 生成 JS 运行时模块内容（虚拟模块 @scope/theme-css）

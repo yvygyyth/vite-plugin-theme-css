@@ -5,9 +5,9 @@ import { createJiti } from 'jiti'
 import type { TransformOptions, TransformResult } from 'jiti'
 import type { ThemeCssOptions, ThemeConfig } from './types'
 import { defaultOptions } from './types'
-import { generateThemeCss } from './generateCss'
-import { generateScssHelper } from './generateScss'
-import { generateRuntime } from './generateRuntime'
+import { generateThemeCss } from './generate/css'
+import { generateScssHelper } from './generate/scss'
+import { generateRuntime } from './generate/runtime'
 
 // jiti 的 transform 选项会整段替换默认 Babel；要先改 source 再交给 babel
 const require = createRequire(import.meta.url)
