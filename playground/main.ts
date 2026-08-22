@@ -1,4 +1,3 @@
-import 'virtual:theme-css/css'
 import './style/demo.scss'
 import { theme, setTheme, getTheme } from '@scope/theme-css'
 

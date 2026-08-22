@@ -1,4 +1,4 @@
-import { defineTheme } from '../src/defineTheme.ts'
+import { defineTheme } from '../src/defineTheme'
 
 export default defineTheme({
     themes: {

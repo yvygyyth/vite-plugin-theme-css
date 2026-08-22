@@ -76,13 +76,15 @@ export default defineConfig({
 })
 ```
 
-### 3. 引入 CSS 变量
+### 3. CSS 变量（自动注入）
 
-在入口文件中导入虚拟 CSS：
+默认会在 HTML 里自动注入主题 CSS 变量，**无需**在入口手动写：
 
 ```ts
-import 'virtual:theme-css/css'
+import 'virtual:theme-css/css' // 可省略
 ```
+
+若需关闭自动注入，可设置 `autoImportCss: false`，再自行在入口 import。
 
 生成示例：
 
@@ -173,8 +175,11 @@ themeCss({
   syncHtmlDark: true,
 
   /** 排除自动注入 SCSS helper 的文件 */
-  exclude: [/node_modules/]
+  exclude: [/node_modules/],
   // 或: (filename) => filename.includes('legacy')
+
+  /** 是否自动在 HTML 注入 CSS 变量，默认 true */
+  autoImportCss: true
 })
 ```
 

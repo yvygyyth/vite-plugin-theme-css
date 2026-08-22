@@ -12,11 +12,14 @@ export interface ThemeCssOptions {
     syncHtmlDark?: boolean
     /** 排除注入 SCSS helper 的文件规则 */
     exclude?: (string | RegExp)[] | ((filename: string) => boolean)
+    /** 是否自动在 HTML 注入 CSS 变量，默认 true */
+    autoImportCss?: boolean
 }
 
 export const defaultOptions: Required<ThemeCssOptions> = {
     config: './theme.config.ts',
     scssNamespace: 'token',
     syncHtmlDark: true,
-    exclude: []
+    exclude: [],
+    autoImportCss: true
 }

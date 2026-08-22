@@ -37,7 +37,8 @@ function resolveRuntimeEntryPath(): string {
 
 export function themeCss(options: ThemeCssOptions = {}): Plugin {
     const resolvedOptions = { ...defaultOptions, ...options }
-    const { config: configPath, scssNamespace, syncHtmlDark, exclude } = resolvedOptions
+    const { config: configPath, scssNamespace, syncHtmlDark, exclude, autoImportCss } =
+        resolvedOptions
 
     let cssContent = ''
     let runtimeDataContent = ''
@@ -155,6 +156,19 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
                     }
                 }
             }
+        },
+
+        transformIndexHtml(html) {
+            if (!autoImportCss || html.includes(VIRTUAL_CSS_ID)) return
+
+            return [
+                {
+                    tag: 'script',
+                    attrs: { type: 'module' },
+                    children: `import ${JSON.stringify(VIRTUAL_CSS_ID)};`,
+                    injectTo: 'head-prepend'
+                }
+            ]
         },
 
         async handleHotUpdate(ctx) {
