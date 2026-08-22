@@ -1,4 +1,4 @@
-import type { Plugin, ResolvedConfig } from 'vite'
+import type { Plugin } from 'vite'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -37,8 +37,6 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
     const resolvedOptions = { ...defaultOptions, ...options }
     const { config: configPath, scssNamespace, syncHtmlDark, exclude } = resolvedOptions
 
-    let viteConfig: ResolvedConfig
-    let themeConfig: ThemeConfig
     let cssContent = ''
     let scssHelperContent = ''
     let runtimeDataContent = ''
@@ -63,7 +61,7 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
         const mod = (await jiti.import(path.resolve(configPath))) as {
             default: ThemeConfig
         }
-        themeConfig = mod.default
+        const themeConfig = mod.default
 
         cssContent = generateThemeCss(themeConfig)
         scssHelperContent = generateScssHelper()
@@ -73,8 +71,7 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
     return {
         name: 'vite-plugin-theme-css',
 
-        async configResolved(config) {
-            viteConfig = config
+        async configResolved() {
             await loadConfigAndGenerate()
         },
 

@@ -1,0 +1,49 @@
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: system-ui, sans-serif;
+    color: token.theme(text, primary);
+    background: token.theme(bg, page);
+}
+
+.card {
+    max-width: 32rem;
+    margin: 4rem auto;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: token.theme(bg, page);
+    border: 1px solid token.theme(text, secondary);
+}
+
+.title {
+    margin: 0 0 0.5rem;
+    font-size: token.common(font, size, title);
+}
+
+.desc {
+    color: token.theme(text, secondary);
+    font-size: token.common(font, size, body);
+}
+
+.token code {
+    color: token.theme(text, primary);
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+}
+
+@include token.on-theme(dark) {
+    button {
+        color: token.theme(text, primary);
+        background: #222;
+        border-color: token.theme(text, secondary);
+    }
+}
