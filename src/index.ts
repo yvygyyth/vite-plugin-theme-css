@@ -10,6 +10,7 @@ import { defaultOptions } from './types'
 import { generateThemeCss } from './generate/css'
 import { generateScssHelper } from './generate/scss'
 import { generateJs } from './generate/js'
+import { createVirtualScssImporter, VIRTUAL_SCSS_MODULE_ID } from './utils/sass-importer'
 
 // jiti 的 transform 选项会整段替换默认 Babel；要先改 source 再交给 babel
 const require = createRequire(import.meta.url)
@@ -19,7 +20,7 @@ const babelTransform = createRequire(require.resolve('jiti/package.json'))('./di
 
 const VIRTUAL_CSS_ID = 'virtual:theme-css/css'
 const VIRTUAL_CSS_RESOLVED = '\0virtual:theme-css.css'
-const VIRTUAL_SCSS_ID = 'virtual:theme-css/scss'
+const VIRTUAL_SCSS_ID = VIRTUAL_SCSS_MODULE_ID
 const VIRTUAL_SCSS_RESOLVED = '\0virtual:theme-css.scss'
 const VIRTUAL_RUNTIME_ID = '@scope/theme-css'
 const VIRTUAL_RUNTIME_DATA_ID = 'virtual:theme-css/runtime-data'
@@ -108,11 +109,20 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
             const userAdditionalData = scssOptions.additionalData
             const ourPrefix = `@use "${VIRTUAL_SCSS_ID}" as ${scssNamespace};\n`
 
+            const applyUserAdditionalData = async (source: string, filename: string) => {
+                if (typeof userAdditionalData === 'function') {
+                    // Vite 8：函数返回值即完整内容，不再自动拼接 source
+                    return userAdditionalData(source, filename)
+                }
+                if (userAdditionalData) {
+                    return userAdditionalData + source
+                }
+                return source
+            }
+
             const wrappedAdditionalData = async (source: string, filename: string) => {
                 if (filename.includes('virtual:theme-css')) {
-                    return typeof userAdditionalData === 'function'
-                        ? await userAdditionalData(source, filename)
-                        : (userAdditionalData ?? '')
+                    return applyUserAdditionalData(source, filename)
                 }
 
                 const shouldExclude = Array.isArray(exclude)
@@ -126,25 +136,27 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
                       : false
 
                 if (shouldExclude) {
-                    return typeof userAdditionalData === 'function'
-                        ? await userAdditionalData(source, filename)
-                        : (userAdditionalData ?? '')
+                    return applyUserAdditionalData(source, filename)
                 }
 
-                const userContent =
-                    typeof userAdditionalData === 'function'
-                        ? await userAdditionalData(source, filename)
-                        : (userAdditionalData ?? '')
-
-                return ourPrefix + userContent
+                const content = await applyUserAdditionalData(source, filename)
+                return ourPrefix + content
             }
+
+            const userImporters = Array.isArray(scssOptions.importers) ? scssOptions.importers : []
 
             return {
                 css: {
                     preprocessorOptions: {
                         scss: {
                             ...scssOptions,
-                            additionalData: wrappedAdditionalData
+                            additionalData: wrappedAdditionalData,
+                            importers: [
+                                createVirtualScssImporter(
+                                    () => scssHelperContent || generateScssHelper()
+                                ),
+                                ...userImporters
+                            ]
                         }
                     }
                 }
