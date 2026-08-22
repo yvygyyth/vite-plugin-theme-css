@@ -12,3 +12,4 @@ export function generateJs(config: ThemeConfig, options: JsDataOptions): string 
 export const options = ${JSON.stringify(options)}
 `
 }
+ 

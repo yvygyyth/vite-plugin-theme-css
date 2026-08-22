@@ -1,6 +1,31 @@
 {
   "name": "vite-plugin-theme-css",
   "version": "0.1.0",
+  "description": "Vite 插件：用一份主题配置生成 CSS 变量、SCSS helper 与 JS 运行时，支持多主题切换与热更新",
+  "author": "yuzinan <1589937631@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yvygyyth/theme-css.git"
+  },
+  "homepage": "https://github.com/yvygyyth/theme-css#readme",
+  "bugs": {
+    "url": "https://github.com/yvygyyth/theme-css/issues"
+  },
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "theme",
+    "css",
+    "css-variables",
+    "scss",
+    "dark-mode",
+    "theme-switcher"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -25,7 +50,9 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepublishOnly": "pnpm run build",
+    "release": "pnpm publish --access public"
   },
   "dependencies": {
     "jiti": "^2.7.0"
