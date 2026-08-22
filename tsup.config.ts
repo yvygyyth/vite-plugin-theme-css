@@ -20,15 +20,15 @@ function inlineScssHelperPlugin(): Plugin {
 }
 
 /** CJS 产物用 __filename，ESM 用 import.meta.url，避免 empty-import-meta 告警 */
-function moduleFilenamePlugin(): Plugin {
+function pluginDirPlugin(): Plugin {
     return {
-        name: 'module-filename',
+        name: 'plugin-dir',
         setup(build: PluginBuild) {
-            build.onLoad({ filter: /utils[\\/]module-filename\.ts$/ }, () => {
+            build.onLoad({ filter: /plugin-dir\.ts$/ }, () => {
                 const isCjs = build.initialOptions.format === 'cjs'
                 const contents = isCjs
-                    ? 'export function getModuleFilename() { return __filename }'
-                    : `import { fileURLToPath } from 'node:url'\nexport function getModuleFilename() { return fileURLToPath(import.meta.url) }`
+                    ? `import path from 'node:path'\nexport const pluginFilename = __filename\nexport const pluginDir = path.dirname(__filename)`
+                    : `import path from 'node:path'\nimport { fileURLToPath } from 'node:url'\nexport const pluginFilename = fileURLToPath(import.meta.url)\nexport const pluginDir = path.dirname(pluginFilename)`
                 return { contents, loader: 'ts' }
             })
         }
@@ -46,7 +46,7 @@ export default defineConfig({
     splitting: false,
     clean: true,
     external: ['virtual:theme-css/runtime-data'],
-    esbuildPlugins: [inlineScssHelperPlugin(), moduleFilenamePlugin()],
+    esbuildPlugins: [inlineScssHelperPlugin(), pluginDirPlugin()],
     outExtension({ format }) {
         return {
             js: format === 'cjs' ? '.cjs' : '.mjs'

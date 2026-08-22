@@ -19,21 +19,19 @@ import { generateThemeCss } from './generate/css'
 import { generateScssHelper } from './generate/scss'
 import { generateJs } from './generate/js'
 import { createVirtualScssImporter } from './utils/sass-importer'
-import { getModuleFilename } from './utils/module-filename'
+import { pluginDir, pluginFilename } from './plugin-dir'
 
 // jiti 的 transform 选项会整段替换默认 Babel；要先改 source 再交给 babel
-const moduleFilename = getModuleFilename()
-const require = createRequire(moduleFilename)
+const require = createRequire(pluginFilename)
 const babelTransform = createRequire(require.resolve('jiti/package.json'))('./dist/babel.cjs') as (
     opts: TransformOptions
 ) => TransformResult
 
 /** @scope/theme-css → 真实入口文件（逻辑在 TS 里，不靠字符串拼） */
 function resolveRuntimeEntryPath(): string {
-    const here = path.dirname(moduleFilename)
-    const distEntry = path.join(here, 'runtime-entry.mjs')
+    const distEntry = path.join(pluginDir, 'runtime-entry.mjs')
     if (existsSync(distEntry)) return distEntry
-    return path.join(here, 'runtime', 'virtual-entry.ts')
+    return path.join(pluginDir, 'runtime', 'virtual-entry.ts')
 }
 
 export function themeCss(options: ThemeCssOptions = {}): Plugin {
@@ -46,7 +44,7 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
     const runtimeEntryPath = resolveRuntimeEntryPath()
 
     async function loadConfigAndGenerate() {
-        const jiti = createJiti(moduleFilename, {
+        const jiti = createJiti(pluginFilename, {
             interopDefault: true,
             transform: (opts) => {
                 let { source } = opts
@@ -105,6 +103,21 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
             }
         },
 
+        async transformIndexHtml(html) {
+            if (!autoImportCss || html.includes('data-theme-css-vars')) return
+
+            if (!cssContent) await loadConfigAndGenerate()
+
+            return [
+                {
+                    tag: 'style',
+                    attrs: { 'data-theme-css-vars': '' },
+                    children: cssContent,
+                    injectTo: 'head-prepend'
+                }
+            ]
+        },
+
         config(userConfig) {
             const scssOptions = userConfig.css?.preprocessorOptions?.scss ?? {}
             const userAdditionalData = scssOptions.additionalData
@@ -157,19 +170,6 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
                     }
                 }
             }
-        },
-
-        transformIndexHtml(html) {
-            if (!autoImportCss || html.includes(VIRTUAL_CSS_ID)) return
-
-            return [
-                {
-                    tag: 'script',
-                    attrs: { type: 'module' },
-                    children: `import ${JSON.stringify(VIRTUAL_CSS_ID)};`,
-                    injectTo: 'head-prepend'
-                }
-            ]
         },
 
         async handleHotUpdate(ctx) {
