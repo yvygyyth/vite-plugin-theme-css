@@ -1,7 +1,6 @@
 import type { Plugin } from 'vite'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import { createJiti } from 'jiti'
 import type { TransformOptions, TransformResult } from 'jiti'
@@ -20,16 +19,18 @@ import { generateThemeCss } from './generate/css'
 import { generateScssHelper } from './generate/scss'
 import { generateJs } from './generate/js'
 import { createVirtualScssImporter } from './utils/sass-importer'
+import { getModuleFilename } from './utils/module-filename'
 
 // jiti 的 transform 选项会整段替换默认 Babel；要先改 source 再交给 babel
-const require = createRequire(import.meta.url)
+const moduleFilename = getModuleFilename()
+const require = createRequire(moduleFilename)
 const babelTransform = createRequire(require.resolve('jiti/package.json'))('./dist/babel.cjs') as (
     opts: TransformOptions
 ) => TransformResult
 
 /** @scope/theme-css → 真实入口文件（逻辑在 TS 里，不靠字符串拼） */
 function resolveRuntimeEntryPath(): string {
-    const here = path.dirname(fileURLToPath(import.meta.url))
+    const here = path.dirname(moduleFilename)
     const distEntry = path.join(here, 'runtime-entry.mjs')
     if (existsSync(distEntry)) return distEntry
     return path.join(here, 'runtime', 'virtual-entry.ts')
@@ -45,7 +46,7 @@ export function themeCss(options: ThemeCssOptions = {}): Plugin {
     const runtimeEntryPath = resolveRuntimeEntryPath()
 
     async function loadConfigAndGenerate() {
-        const jiti = createJiti(import.meta.url, {
+        const jiti = createJiti(moduleFilename, {
             interopDefault: true,
             transform: (opts) => {
                 let { source } = opts

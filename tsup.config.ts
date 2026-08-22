@@ -19,6 +19,22 @@ function inlineScssHelperPlugin(): Plugin {
     }
 }
 
+/** CJS 产物用 __filename，ESM 用 import.meta.url，避免 empty-import-meta 告警 */
+function moduleFilenamePlugin(): Plugin {
+    return {
+        name: 'module-filename',
+        setup(build: PluginBuild) {
+            build.onLoad({ filter: /utils[\\/]module-filename\.ts$/ }, () => {
+                const isCjs = build.initialOptions.format === 'cjs'
+                const contents = isCjs
+                    ? 'export function getModuleFilename() { return __filename }'
+                    : `import { fileURLToPath } from 'node:url'\nexport function getModuleFilename() { return fileURLToPath(import.meta.url) }`
+                return { contents, loader: 'ts' }
+            })
+        }
+    }
+}
+
 export default defineConfig({
     entry: {
         index: 'src/index.ts',
@@ -30,7 +46,7 @@ export default defineConfig({
     splitting: false,
     clean: true,
     external: ['virtual:theme-css/runtime-data'],
-    esbuildPlugins: [inlineScssHelperPlugin()],
+    esbuildPlugins: [inlineScssHelperPlugin(), moduleFilenamePlugin()],
     outExtension({ format }) {
         return {
             js: format === 'cjs' ? '.cjs' : '.mjs'
