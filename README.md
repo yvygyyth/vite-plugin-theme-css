@@ -161,6 +161,12 @@ getTheme() // 'dark'
 
 `setTheme` 默认在主题名为 `dark` 时同步给 `<html>` 加上 `dark` class（可用 `syncHtmlDark: false` 关闭）。
 
+TypeScript 需引入虚拟模块声明（在 `env.d.ts` / `vite-env.d.ts` 中）：
+
+```ts
+/// <reference types="vite-plugin-theme-css/client" />
+```
+
 ## 插件选项
 
 ```ts

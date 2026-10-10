@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-theme-css",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Vite 插件：用一份主题配置生成 CSS 变量、SCSS helper 与 JS 运行时，支持多主题切换与热更新",
   "author": "yuzinan <1589937631@qq.com>",
   "license": "MIT",
@@ -40,10 +40,14 @@
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.mjs",
       "require": "./dist/runtime.cjs"
+    },
+    "./client": {
+      "types": "./client.d.ts"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "client.d.ts"
   ],
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
